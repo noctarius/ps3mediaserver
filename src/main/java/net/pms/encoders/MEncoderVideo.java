@@ -1421,7 +1421,7 @@ public class MEncoderVideo extends Player {
 							params.aid.isMpegAudio()
 						)
 					)
-				) && params.mediaRenderer.isLPCMPlayable();
+				) && (params.aid.getAudioProperties().getNumberOfChannels() > 1) && params.mediaRenderer.isLPCMPlayable();
 		}
 
 		if (dtsRemux || pcm) {
