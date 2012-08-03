@@ -1383,12 +1383,13 @@ public class MEncoderVideo extends Player {
 			&& (params.mediaRenderer.isPS3() && params.aid.getAudioProperties().getNumberOfChannels() == 2)
 			&& (params.aid.getBitRate() > 370000 && params.aid.getBitRate() < 400000);
 
+		boolean isTSMuxerVideoEngineEnabled = PMS.getConfiguration().getEnginesAsList(PMS.get().getRegistry()).contains(TSMuxerVideo.ID);
         if (configuration.isRemuxAC3() && params.aid != null && params.aid.isAC3() && !ps3_and_stereo_and_384_kbits && !avisynth() && params.mediaRenderer.isTranscodeToAC3()) {
 			// AC3 remux takes priority
 			ac3Remux = true;
 		} else {
 			// now check for DTS remux and LPCM streaming
-			dtsRemux = configuration.isDTSEmbedInPCM() &&
+			dtsRemux = isTSMuxerVideoEngineEnabled && configuration.isDTSEmbedInPCM() &&
 				(
 					!dvd ||
 					configuration.isMencoderRemuxMPEG2()
@@ -1396,7 +1397,7 @@ public class MEncoderVideo extends Player {
 				params.aid.isDTS() &&
 				!avisynth() &&
 				params.mediaRenderer.isDTSPlayable();
-			pcm = configuration.isMencoderUsePcm() &&
+			pcm = isTSMuxerVideoEngineEnabled && configuration.isMencoderUsePcm() &&
 				(
 					!dvd ||
 					configuration.isMencoderRemuxMPEG2()
@@ -2098,13 +2099,13 @@ public class MEncoderVideo extends Player {
 					} else if (expertOptions[i].equals("-nomux")) {
 						expertOptions[i] = REMOVE_OPTION;
 					} else if (expertOptions[i].equals("-mt")) {
-						// not an MEncoder option so remove it from cmdList.
+						// not an MEncoder option so remove it from exportOptions.
 						// multi-threaded MEncoder is used by default, so this is obsolete (TODO: Remove it from the description)
 						expertOptions[i] = REMOVE_OPTION;
 					} else if (expertOptions[i].equals("-ofps")) {
 						// replace the cmdList version with the expertOptions version i.e. remove the former
 						removeCmdListOption.put("-ofps", true);
-						// skip (i.e. leave unchanged) the value
+						// skip (i.e. leave unchanged) the exportOptions value
 						++i;
 					} else if (expertOptions[i].equals("-fps")) {
 						removeCmdListOption.put("-fps", true);
@@ -2170,12 +2171,13 @@ public class MEncoderVideo extends Player {
 
 				// pass 2: process cmdList
 				List<String> transformedCmdList = new ArrayList<String>();
+
 				for (int i = 0; i < cmdList.size(); ++i) {
 					String option = cmdList.get(i);
 
 					// we remove an option by *not* adding it to transformedCmdList
 					if (removeCmdListOption.containsKey(option)) {
-						if (isTrue(removeCmdListOption.get(option))) { // true: remove corresponding value
+						if (isTrue(removeCmdListOption.get(option))) { // true: remove (i.e. don't add) the corresponding value
 							++i;
 						}
 					} else {
