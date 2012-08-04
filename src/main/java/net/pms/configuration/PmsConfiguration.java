@@ -40,6 +40,7 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.*;
+import net.pms.encoders.VLCVideo;
 
 /**
  * Container for all configurable PMS settings. Settings are typically defined by three things:
@@ -175,7 +176,20 @@ public class PmsConfiguration {
 	private static final String KEY_VIRTUAL_FOLDERS = "vfolders";
 	// FIXME what is this? if it should be kept, it needs to be a) documented and b) renamed (breaking change)
 	private static final String KEY_BUFFER_MAX = "buffer_max";
-
+	private static final String KEY_VLC_USE_HW_ACCELERATION = "VLC_use_HW_acceleration";
+	private static final String KEY_VLC_USE_EXPERIMENTAL_CODECS = "VLC_use_experimental_codecs";
+	private static final String KEY_VLC_AUDIO_SYNC_ENABLED = "VLC_audio_sync_enabled";
+	private static final String KEY_VLC_SUBTITLE_ENABLED = "VLC_subtitle_enabled";
+	private static final String KEY_VLC_AUDIO_PRI = "VLC_audio_language_priority";
+	private static final String KEY_VLC_SUBTITLE_PRI = "VLC_subtitle_language_priority";
+	private static final String KEY_VLC_CODEC_VIDEO = "VLC_codec_video";
+	private static final String KEY_VLC_CODEC_AUDIO = "VLC_codec_audio";
+	private static final String KEY_VLC_CODEC_CONTAINER = "VLC_codec_container";
+	private static final String KEY_VLC_CODEC_OVERRIDE = "VLC_codec_override";
+	private static final String KEY_VLC_SCALE = "VLC_scale";
+	private static final String KEY_VLC_SAMPLE_RATE_OVERRIDE = "VLC_sample_rate_override";
+	private static final String KEY_VLC_SAMPLE_RATE = "VLC_sample_rate";
+	
 	// the name of the subdirectory under which PMS config files are stored for this build (default: PMS).
 	// see Build for more details
 	private static final String PROFILE_DIRECTORY_NAME = Build.getProfileDirectoryName();
@@ -2268,5 +2282,107 @@ public class PmsConfiguration {
 	 */
 	public void setTranscodeFolderName(String name) {
 		configuration.setProperty(KEY_TRANSCODE_FOLDER_NAME, name);
+	}
+
+	public boolean isVlcUseHardwareAccel() {
+		return getBoolean(KEY_VLC_USE_HW_ACCELERATION, false);
+	}
+
+	public void setVlcUseHardwareAccel(boolean b) {
+		configuration.setProperty(KEY_VLC_USE_HW_ACCELERATION, b);
+	}
+
+	public boolean isVlcExperimentalCodecs() {
+		return getBoolean(KEY_VLC_USE_EXPERIMENTAL_CODECS, false);
+	}
+	public void setVlcExperimentalCodecs(boolean b) {
+		configuration.setProperty(KEY_VLC_USE_EXPERIMENTAL_CODECS, b);
+	}
+
+	public boolean isVlcAudioSyncEnabled() {
+		return getBoolean(KEY_VLC_AUDIO_SYNC_ENABLED, false);
+	}
+
+	public void setVlcAudioSyncEnabled(boolean b) {
+		configuration.setProperty(KEY_VLC_AUDIO_SYNC_ENABLED, b);
+	}
+
+	public boolean isVlcSubtitleEnabled() {
+		return getBoolean(KEY_VLC_SUBTITLE_ENABLED, true);
+	}
+
+	public void setVlcSubtitleEnabled(boolean b) {
+		configuration.setProperty(KEY_VLC_SUBTITLE_ENABLED, b);
+	}
+
+	public String getVlcAudioPri() {
+		return getString(KEY_VLC_AUDIO_PRI, Messages.getString("VlcTrans.7"));
+	}
+	public void setVlcAudioPri(String text) {
+		configuration.setProperty(KEY_VLC_AUDIO_PRI, text);
+	}
+
+	public String getVlcSubtitlePri() {
+		return getString(KEY_VLC_SUBTITLE_PRI, Messages.getString("VlcTrans.9"));
+	}
+
+	public void setVlcSubtitlePri(String text) {
+		configuration.setProperty(KEY_VLC_SUBTITLE_PRI, text);
+	}
+	
+	public String getVlcCodecVideo() {
+		return getString(KEY_VLC_CODEC_VIDEO, null);
+	}
+	
+	public void setVlcCodecVideo(String value) {
+		configuration.setProperty(KEY_VLC_CODEC_VIDEO, value);
+	}
+	
+	public String getVlcCodecAudio() {
+		return getString(KEY_VLC_CODEC_AUDIO, null);
+	}
+	
+	public void setVlcCodecAudio(String value) {
+		configuration.setProperty(KEY_VLC_CODEC_AUDIO, value);
+	}
+	
+	public String getVlcCodecContainer() {
+		return getString(KEY_VLC_CODEC_CONTAINER, null);
+	}
+	
+	public void setVlcCodecContainer(String value) {
+		configuration.setProperty(KEY_VLC_CODEC_CONTAINER, value);
+	}
+	
+	public boolean getVlcCodecOverride() {
+		return getBoolean(KEY_VLC_CODEC_OVERRIDE, false);
+	}
+	
+	public void setVlcCodecOverride(boolean value) {
+		configuration.setProperty(KEY_VLC_CODEC_OVERRIDE, value);
+	}
+	
+	public String getVlcScale() {
+		return getString(KEY_VLC_SCALE, null);
+	}
+	
+	public void setVlcScale(String value) {
+		configuration.setProperty(KEY_VLC_SCALE, value);
+	}
+	
+	public boolean getVlcSampleRateOverride() {
+		return getBoolean(KEY_VLC_SAMPLE_RATE_OVERRIDE, false);
+	}
+	
+	public void setVlcSampleRateOverride(boolean value) {
+		configuration.setProperty(KEY_VLC_SAMPLE_RATE_OVERRIDE, value);
+	}
+	
+	public String getVlcSampleRate() {
+		return getString(KEY_VLC_SAMPLE_RATE, null);
+	}
+	
+	public void setVlcSampleRate(String value) {
+		configuration.setProperty(KEY_VLC_SAMPLE_RATE, value);
 	}
 }

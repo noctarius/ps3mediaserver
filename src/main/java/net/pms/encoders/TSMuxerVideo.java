@@ -252,7 +252,7 @@ public class TSMuxerVideo extends Player {
 									params.aid.isMpegAudio()
 								)
 							)
-						) && params.mediaRenderer.isLPCMPlayable();
+						) && (params.aid.getAudioProperties().getNumberOfChannels() > 1) && params.mediaRenderer.isLPCMPlayable();
 
 					int channels;
 					if (ac3Remux) {
@@ -371,7 +371,7 @@ public class TSMuxerVideo extends Player {
 										audio.isMpegAudio()
 									)
 								)
-							) && params.mediaRenderer.isLPCMPlayable();
+							) && (audio.getAudioProperties().getNumberOfChannels() > 1) && params.mediaRenderer.isLPCMPlayable();
 
 						int channels;
 						if (ac3Remux) {
@@ -512,7 +512,7 @@ public class TSMuxerVideo extends Player {
 							params.aid.isMpegAudio()
 						)
 					)
-				) && params.mediaRenderer.isLPCMPlayable();
+				) && (params.aid.getAudioProperties().getNumberOfChannels() > 1) && params.mediaRenderer.isLPCMPlayable();
 			String type = "A_AC3";
 			if (ac3Remux) {
 				// AC3 remux takes priority
@@ -562,7 +562,7 @@ public class TSMuxerVideo extends Player {
 								params.aid.isMpegAudio()
 							)
 						)
-					) && params.mediaRenderer.isLPCMPlayable();
+					) && (params.aid.getAudioProperties().getNumberOfChannels() > 1) && params.mediaRenderer.isLPCMPlayable();
 				String type = "A_AC3";
 				if (ac3Remux) {
 					// AC3 remux takes priority

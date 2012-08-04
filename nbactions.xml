@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<actions>
+        <action>
+            <actionName>build</actionName>
+            <goals>
+                <goal>com.savage7.maven.plugins:maven-external-dependency-plugin:resolve-external</goal>
+                <goal>com.savage7.maven.plugins:maven-external-dependency-plugin:install-external</goal>
+                <goal>package</goal>
+            </goals>
+        </action>
+        <action>
+            <actionName>rebuild</actionName>
+            <goals>
+                <goal>clean</goal>
+                <goal>com.savage7.maven.plugins:maven-external-dependency-plugin:resolve-external</goal>
+                <goal>com.savage7.maven.plugins:maven-external-dependency-plugin:install-external</goal>
+                <goal>package</goal>
+            </goals>
+        </action>
+        <action>
+            <actionName>debug</actionName>
+            <goals>
+                <goal>process-classes</goal>
+                <goal>org.codehaus.mojo:exec-maven-plugin:1.2:exec</goal>
+            </goals>
+            <properties>
+                <exec.args>-Xdebug -Xrunjdwp:transport=dt_socket,server=n,address=${jpda.address} -classpath %classpath net.pms.PMS</exec.args>
+                <exec.executable>java</exec.executable>
+                <exec.classpathScope>runtime</exec.classpathScope>
+                <jpda.listen>true</jpda.listen>
+            </properties>
+        </action>
+        <action>
+            <actionName>CUSTOM-external</actionName>
+            <displayName>external</displayName>
+            <goals>
+                <goal>com.savage7.maven.plugins:maven-external-dependency-plugin:resolve-external</goal>
+                <goal>com.savage7.maven.plugins:maven-external-dependency-plugin:install-external</goal>
+            </goals>
+        </action>
+    </actions>

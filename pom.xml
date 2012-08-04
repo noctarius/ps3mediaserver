@@ -1091,7 +1091,7 @@
 								<id>build-setup-windows</id>
 								<configuration>
 									<makensisBin>${project.external-resources}/third-party/nsis/makensis.exe</makensisBin>
-									<outputFile>${project.build.directory}/PMS-setup.exe</outputFile>
+									<outputFile>${project.build.directory}/PMS-${project.version}-${git.commit.id.abbrev}-setup.exe</outputFile>
 									<setupScript>${project.external-resources}/nsis/setup.nsi</setupScript>
 								</configuration>
 								<phase>package</phase>

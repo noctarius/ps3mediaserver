@@ -1269,9 +1269,13 @@ public class MEncoderVideo extends Player {
 		// don't honour "Switch to tsMuxeR..." if the resource is being streamed via an MEncoder entry in
 		// the #--TRANSCODE--# folder
 		boolean forceMencoder = !configuration.getHideTranscodeEnabled()
-			&& dlna.isNoName() // XXX remove this? http://www.ps3mediaserver.org/forum/viewtopic.php?f=11&t=12149
+			//&& dlna.isNoName() // XXX remove this? http://www.ps3mediaserver.org/forum/viewtopic.php?f=11&t=12149
 			&& (dlna.getParent() instanceof FileTranscodeVirtualFolder);
 
+		
+		// don't honour "Switch to tsMuxeR..." if the resource is being forced by the user
+		forceMencoder = forceMencoder || dlna.getFormat().skip(PMS.getConfiguration().getForceTranscode(), null);
+		
 		ovccopy = false;
 		pcm = false;
 		ac3Remux = false;
@@ -1419,7 +1423,7 @@ public class MEncoderVideo extends Player {
 							params.aid.isMpegAudio()
 						)
 					)
-				) && params.mediaRenderer.isLPCMPlayable();
+				) && (params.aid.getAudioProperties().getNumberOfChannels() > 1) && params.mediaRenderer.isLPCMPlayable();
 		}
 
 		if (dtsRemux || pcm) {
