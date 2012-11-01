@@ -86,13 +86,13 @@ public class FormatConfiguration {
 	}
 
 	public static final String MIMETYPE_AUTO = "MIMETYPE_AUTO";
-	ArrayList<Supports> list;
+	private ArrayList<Supports> list;
 
 	public List<Supports> getFormats() {
 		return Collections.unmodifiableList(list);
 	}
 	
-	public static class Supports {
+	private class Supports {
 		String format;
 		String videocodec;
 		String audiocodec;

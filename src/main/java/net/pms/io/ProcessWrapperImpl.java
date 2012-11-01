@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class ProcessWrapperImpl extends Thread implements ProcessWrapper {
 	private static final Logger logger = LoggerFactory.getLogger(ProcessWrapperImpl.class);
@@ -85,7 +86,7 @@ public class ProcessWrapperImpl extends Thread implements ProcessWrapper {
 
 		File exec = new File(cmdArray[0]);
 
-		if (exec.exists() && exec.isFile()) {
+		if (exec.isFile()) {
 			cmdArray[0] = exec.getAbsolutePath();
 		}
 
@@ -128,6 +129,22 @@ public class ProcessWrapperImpl extends Thread implements ProcessWrapper {
 			}
 			if (params.workDir != null && params.workDir.isDirectory()) {
 				pb.directory(params.workDir);
+			}
+			if (params.env != null && !params.env.isEmpty()) {
+				Map<String,String> environment = pb.environment();
+				// actual name of system path var is case-sensitive
+				String sysPathKey = PMS.get().isWindows() ? "Path" : "PATH";
+				// as is Map
+				String PATH = params.env.containsKey("PATH") ? params.env.get("PATH") :
+					params.env.containsKey("path") ? params.env.get("path") :
+					params.env.containsKey("Path") ? params.env.get("Path") : null;
+				if (PATH != null) {
+					PATH += (File.pathSeparator + environment.get(sysPathKey));
+				}
+				environment.putAll(params.env);
+				if (PATH != null) {
+					environment.put(sysPathKey, PATH);
+				}
 			}
 			process = pb.start();
 			PMS.get().currentProcesses.add(process);

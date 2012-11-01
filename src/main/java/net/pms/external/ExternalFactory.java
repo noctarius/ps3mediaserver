@@ -107,7 +107,12 @@ public class ExternalFactory {
 			return;
 		}
 
-		// Filter all .jar files from the plugin directory
+		if (!pluginDirectory.canRead()) {
+			LOGGER.warn("Plugin directory is not readable: " + pluginDirectory);
+			return;
+		}
+
+		// Find all .jar files in the plugin directory
 		File[] jarFiles = pluginDirectory.listFiles(
 			new FileFilter() {
 				public boolean accept(File file) {
@@ -116,7 +121,7 @@ public class ExternalFactory {
 			}
 		);
 
-		int nJars = jarFiles.length;
+		int nJars = (jarFiles == null) ? 0 : jarFiles.length;
 
 		if (nJars == 0) {
 			LOGGER.info("No plugins found");

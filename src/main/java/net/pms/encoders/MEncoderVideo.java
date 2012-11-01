@@ -901,13 +901,13 @@ public class MEncoderVideo extends Player {
 		subs = new JCheckBox(Messages.getString("MEncoderVideo.22"));
 		subs.setContentAreaFilled(false);
 
-		if (configuration.getUseSubtitles()) {
+		if (configuration.isAutoloadSubtitles()) {
 			subs.setSelected(true);
 		}
 
 		subs.addItemListener(new ItemListener() {
 			public void itemStateChanged(ItemEvent e) {
-				configuration.setUseSubtitles((e.getStateChange() == ItemEvent.SELECTED));
+				configuration.setAutoloadSubtitles((e.getStateChange() == ItemEvent.SELECTED));
 			}
 		});
 
@@ -1384,7 +1384,7 @@ public class MEncoderVideo extends Player {
 			&& (params.aid.getBitRate() > 370000 && params.aid.getBitRate() < 400000);
 
 		final boolean isTSMuxerVideoEngineEnabled = PMS.getConfiguration().getEnginesAsList(PMS.get().getRegistry()).contains(TSMuxerVideo.ID);
-		final boolean mencoderAC3RemuxAudioDelayBug = (params.aid.getAudioProperties().getAudioDelay() != 0 && params.timeseek == 0);
+		final boolean mencoderAC3RemuxAudioDelayBug = (params.aid != null) && (params.aid.getAudioProperties().getAudioDelay() != 0) && (params.timeseek == 0);
         if (!mencoderAC3RemuxAudioDelayBug && configuration.isRemuxAC3() && params.aid != null && params.aid.isAC3() && !ps3_and_stereo_and_384_kbits && !avisynth() && params.mediaRenderer.isTranscodeToAC3()) {
 			// AC3 remux takes priority
 			ac3Remux = true;
@@ -1599,6 +1599,7 @@ public class MEncoderVideo extends Player {
 				boolean override_ass_style = !configuration.isMencoderAssDefaultStyle() ||
 						params.sid.getType() == SubtitleType.SUBRIP ||
 						params.sid.getType() == SubtitleType.TX3G;
+
 				if (override_ass_style) {
 					String assSubColor = "ffffff00";
 					if (configuration.getSubsColor() != 0) {
@@ -1653,6 +1654,16 @@ public class MEncoderVideo extends Player {
 					sb.append("-ass-force-style MarginV=").append(subtitleMargin).append(" ");
 				}
 
+				// MEncoder is not compiled with fontconfig on Mac OSX, therefore
+				// use of the "-ass" option also requires the "-font" option.
+				if (Platform.isMac() && sb.toString().indexOf(" -font ") < 0) {
+					String font = CodecUtil.getDefaultFontPath();
+
+					if (isNotBlank(font)) {
+						sb.append("-font ").append(font).append(" ");
+					}
+				}
+
 				// Workaround for MPlayer #2041, remove when that bug is fixed
 				if (!params.sid.isEmbedded()) {
 					sb.append("-noflip-hebrew ");
@@ -1691,9 +1702,13 @@ public class MEncoderVideo extends Player {
 			}
 
 			// Common subtitle options
-			// Use fontconfig if enabled
-			sb.append("-").append(configuration.isMencoderFontConfig() ? "" : "no").append("fontconfig ");
 
+			// MEncoder on Mac OSX is compiled without fontconfig support.
+			// Appending the flag will break execution, so skip it on Mac OSX.
+			if (!Platform.isMac()) {
+				// Use fontconfig if enabled
+				sb.append("-").append(configuration.isMencoderFontConfig() ? "" : "no").append("fontconfig ");
+			}
 			// Apply DVD/VOBSUB subtitle quality
 			if (params.sid.getType() == SubtitleType.VOBSUB && configuration.getMencoderVobsubSubtitleQuality() != null) {
 				String subtitleQuality = configuration.getMencoderVobsubSubtitleQuality();
@@ -2360,16 +2375,16 @@ public class MEncoderVideo extends Player {
 				PipeIPCProcess ffAudioPipe = new PipeIPCProcess(System.currentTimeMillis() + "ffmpegaudio01", System.currentTimeMillis() + "audioout", false, true);
 				StreamModifier sm = new StreamModifier();
 				sm.setPcm(pcm);
-				sm.setDtsembed(dtsRemux);
+				sm.setDtsEmbed(dtsRemux);
 				sm.setSampleFrequency(48000);
-				sm.setBitspersample(16);
+				sm.setBitsPerSample(16);
 
 				String mixer = null;
 				if (pcm && !dtsRemux) {
 					mixer = getLPCMChannelMappingForMencoder(params.aid); // LPCM always outputs 5.1/7.1 for multichannel tracks. Downmix with player if needed!
 				}
 
-				sm.setNbchannels(channels);
+				sm.setNbChannels(channels);
 
 				// it seems the -really-quiet prevents mencoder to stop the pipe output after some time...
 				// -mc 0.1 make the DTS-HD extraction works better with latest mencoder builds, and makes no impact on the regular DTS one
