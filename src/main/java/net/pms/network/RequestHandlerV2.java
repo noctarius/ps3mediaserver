@@ -223,7 +223,9 @@ public class RequestHandlerV2 extends SimpleChannelUpstreamHandler {
 				// Attempt 4: Not really an attempt; all other attempts to recognize
 				// the renderer have failed. The only option left is to assume the
 				// default renderer.
-				request.setMediaRenderer(RendererConfiguration.getDefaultConf());
+				renderer = RendererConfiguration.getDefaultConf();
+				renderer.associateIP(ia);
+				request.setMediaRenderer(renderer);
 				logger.trace("Using default media renderer " + request.getMediaRenderer().getRendererName());
 
 				if (userAgentString != null && !userAgentString.equals("FDSSDP")) {
