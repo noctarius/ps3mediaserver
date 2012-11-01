@@ -59,7 +59,7 @@ public class DLNAMediaDatabase implements Runnable {
 	private final int SIZE_MODEL = 128;
 	private final int SIZE_MUXINGMODE = 32;
 	private final int SIZE_FRAMERATE_MODE = 16;
-	private final int SIZE_LANG = 3;
+	private final int SIZE_LANG = 20;
 	private final int SIZE_FLAVOR = 128;
 	private final int SIZE_SAMPLEFREQ = 16;
 	private final int SIZE_CODECA = 32;
@@ -700,5 +700,14 @@ public class DLNAMediaDatabase implements Runnable {
 			}
 		}
 		PMS.get().getFrame().setStatusLine(null);
+	}
+
+	public void shutdown() {
+		try {
+			cp.dispose();
+			
+		} catch (SQLException e) {
+			PMS.error("Database closing failed", e);
+		}
 	}
 }
