@@ -304,8 +304,12 @@ public class MEncoderVideo extends Player {
 
 					if (result.length > 0 && result[0].startsWith("@@")) {
 						String errorMessage = result[0].substring(2);
-						JOptionPane.showMessageDialog(SwingUtilities.getWindowAncestor((Component) PMS.get().getFrame()), errorMessage);
-
+						JOptionPane.showMessageDialog(
+							SwingUtilities.getWindowAncestor((Component) PMS.get().getFrame()),
+							errorMessage,
+							Messages.getString("Dialog.Error"),
+							JOptionPane.ERROR_MESSAGE
+						);
 					} else {
 						configuration.setCodecSpecificConfig(newCodecparam);
 						break;
@@ -409,21 +413,6 @@ public class MEncoderVideo extends Player {
 			scaleX.setEnabled(false);
 			scaleY.setEnabled(false);
 		}
-
-		videoremux = new JCheckBox("<html>" + Messages.getString("MEncoderVideo.38") + "</html>");
-		videoremux.setContentAreaFilled(false);
-
-		if (configuration.isMencoderMuxWhenCompatible()) {
-			videoremux.setSelected(true);
-		}
-
-		videoremux.addItemListener(new ItemListener() {
-			public void itemStateChanged(ItemEvent e) {
-				configuration.setMencoderMuxWhenCompatible((e.getStateChange() == ItemEvent.SELECTED));
-			}
-		});
-
-		builder.add(videoremux, FormLayoutUtil.flip(cc.xyw(1, 9, 13), colSpec, orientation));
 
 		cmp = builder.addSeparator(Messages.getString("MEncoderVideo.5"), FormLayoutUtil.flip(cc.xyw(1, 19, 15), colSpec, orientation));
 		cmp = (JComponent) cmp.getComponent(0);
@@ -576,7 +565,7 @@ public class MEncoderVideo extends Player {
 			Messages.getString("MEncoderVideo.115"),
 			Messages.getString("MEncoderVideo.116"),
 			Messages.getString("MEncoderVideo.117"),
-			Messages.getString("MEncoderVideo.118"),			
+			Messages.getString("MEncoderVideo.118"),
 			Messages.getString("MEncoderVideo.119"),
 			Messages.getString("MEncoderVideo.120"),
 			Messages.getString("MEncoderVideo.121"),
@@ -1188,7 +1177,7 @@ public class MEncoderVideo extends Player {
 			// Convert value from Mb to Kb
 			defaultMaxBitrates[0] = 1000 * defaultMaxBitrates[0];
 
-			// Halve it since it seems to send up to 1 second of video in advance
+			// Half it since it seems to send up to 1 second of video in advance
 			defaultMaxBitrates[0] = defaultMaxBitrates[0] / 2;
 
 			int bufSize = 1835;
@@ -1229,6 +1218,18 @@ public class MEncoderVideo extends Player {
 		}
 
 		return encodeSettings;
+	}
+
+	/*
+	 * collapse the multiple internal ways of saying "subtitles are disabled" into a single method
+	 * which returns true if any of the following are true:
+	 *
+	 *     1) configuration.isMencoderDisableSubs()
+	 *     2) params.sid == null
+	 *     3) avisynth()
+	 */
+	private boolean isDisableSubtitles(OutputParams params) {
+		return configuration.isMencoderDisableSubs() || (params.sid == null) || avisynth();
 	}
 
 	@Override
@@ -1297,55 +1298,7 @@ public class MEncoderVideo extends Player {
 			LOGGER.error("Cannot parse configured MEncoder overscan compensation height: \"{}\"", configuration.getMencoderOverscanCompensationHeight());
 		}
 
-		if (
-			!forceMencoder &&
-			params.sid == null &&
-			!dvd &&
-			!avisynth() &&
-			media != null && (
-				media.isVideoPS3Compatible(newInput) ||
-				!params.mediaRenderer.isH264Level41Limited()
-			) &&
-			media.isMuxable(params.mediaRenderer) &&
-			configuration.isMencoderMuxWhenCompatible() &&
-			params.mediaRenderer.isMuxH264MpegTS() && (
-				intOCW == 0 &&
-				intOCH == 0
-			)
-		) {
-			String expertOptions[] = getSpecificCodecOptions(
-				configuration.getCodecSpecificConfig(),
-				media,
-				params,
-				fileName,
-				externalSubtitlesFileName,
-				configuration.isMencoderIntelligentSync(),
-				false
-			);
-
-			boolean nomux = false;
-
-			for (String s : expertOptions) {
-				if (s.equals("-nomux")) {
-					nomux = true;
-				}
-			}
-
-			if (!nomux) {
-				TSMuxerVideo tv = new TSMuxerVideo(configuration);
-				params.forceFps = media.getValidFps(false);
-
-				if (media.getCodecV().equals("h264")) {
-					params.forceType = "V_MPEG4/ISO/AVC";
-				} else if (media.getCodecV().startsWith("mpeg2")) {
-					params.forceType = "V_MPEG-2";
-				} else if (media.getCodecV().equals("vc1")) {
-					params.forceType = "V_MS/VFW/WVC1";
-				}
-
-				return tv.launchTranscode(fileName, dlna, media, params);
-			}
-		} else if (params.sid == null && dvd && configuration.isMencoderRemuxMPEG2() && params.mediaRenderer.isMpeg2Supported()) {
+		if (params.sid == null && dvd && configuration.isMencoderRemuxMPEG2() && params.mediaRenderer.isMpeg2Supported()) {
 			String expertOptions[] = getSpecificCodecOptions(
 				configuration.getCodecSpecificConfig(),
 				media,
@@ -1449,6 +1402,7 @@ public class MEncoderVideo extends Player {
 		} else {
 			channels = configuration.getAudioChannelCount(); // 5.1 max for ac3 encoding
 		}
+
 		LOGGER.trace("channels=" + channels);
 
 		String add = "";
@@ -1532,7 +1486,9 @@ public class MEncoderVideo extends Player {
 
 			// Ditlew - WDTV Live (+ other byte asking clients), CBR. This probably ought to be placed in addMaximumBitrateConstraints(..)
 			int cbr_bitrate = params.mediaRenderer.getCBRVideoBitrate();
-			String cbr_settings = (cbr_bitrate > 0) ? ":vrc_buf_size=5000:vrc_minrate=" + cbr_bitrate + ":vrc_maxrate=" + cbr_bitrate + ":vbitrate=" + ((cbr_bitrate > 16000) ? cbr_bitrate * 1000 : cbr_bitrate) : "";
+			String cbr_settings = (cbr_bitrate > 0) ?
+				":vrc_buf_size=5000:vrc_minrate=" + cbr_bitrate + ":vrc_maxrate=" + cbr_bitrate + ":vbitrate=" + ((cbr_bitrate > 16000) ? cbr_bitrate * 1000 : cbr_bitrate) :
+				"";
 			String encodeSettings = "-lavcopts autoaspect=1:vcodec=" + vcodec +
 				(wmv ? ":acodec=wmav2:abitrate=448" : (cbr_settings + ":acodec=" + (configuration.isMencoderAc3Fixed() ? "ac3_fixed" : "ac3") +
 				":abitrate=" + CodecUtil.getAC3Bitrate(configuration, params.aid))) +
@@ -1582,7 +1538,7 @@ public class MEncoderVideo extends Player {
 
 		StringBuilder sb = new StringBuilder();
 		// Set subtitles options
-		if (!configuration.isMencoderDisableSubs() && !avisynth() && params.sid != null) {
+		if (!isDisableSubtitles(params)) {
 			int subtitleMargin = 0;
 			int userMargin     = 0;
 
@@ -1592,6 +1548,7 @@ public class MEncoderVideo extends Player {
 					configuration.isMencoderAss() &&   // GUI: enable subtitles formating
 					!foundNoassParam &&                // GUI: codec specific options
 					!dvd;
+
 			if (apply_ass_styling) {
 				sb.append("-ass ");
 
@@ -1621,7 +1578,7 @@ public class MEncoderVideo extends Player {
 						String font = CodecUtil.getDefaultFontPath();
 						if (isNotBlank(font)) {
 							// Variable "font" contains a font path instead of a font name.
-							// Does "-ass-force-style" support font paths? In tests on OSX
+							// Does "-ass-force-style" support font paths? In tests on OS X
 							// the font path is ignored (Outline, Shadow and MarginV are
 							// used, though) and the "-font" definition is used instead.
 							// See: https://github.com/ps3mediaserver/ps3mediaserver/pull/14
@@ -1654,7 +1611,7 @@ public class MEncoderVideo extends Player {
 					sb.append("-ass-force-style MarginV=").append(subtitleMargin).append(" ");
 				}
 
-				// MEncoder is not compiled with fontconfig on Mac OSX, therefore
+				// MEncoder is not compiled with fontconfig on Mac OS X, therefore
 				// use of the "-ass" option also requires the "-font" option.
 				if (Platform.isMac() && sb.toString().indexOf(" -font ") < 0) {
 					String font = CodecUtil.getDefaultFontPath();
@@ -1703,8 +1660,8 @@ public class MEncoderVideo extends Player {
 
 			// Common subtitle options
 
-			// MEncoder on Mac OSX is compiled without fontconfig support.
-			// Appending the flag will break execution, so skip it on Mac OSX.
+			// MEncoder on Mac OS X is compiled without fontconfig support.
+			// Appending the flag will break execution, so skip it on Mac OS X.
 			if (!Platform.isMac()) {
 				// Use fontconfig if enabled
 				sb.append("-").append(configuration.isMencoderFontConfig() ? "" : "no").append("fontconfig ");
@@ -1720,6 +1677,7 @@ public class MEncoderVideo extends Player {
 			if (params.sid.isExternal()) {
 				if (!params.sid.isExternalFileUtf()) {
 					String subcp = null;
+
 					// append -subcp option for non UTF external subtitles
 					if (isNotBlank(configuration.getMencoderSubCp())) {
 						// manual setting
@@ -1728,6 +1686,7 @@ public class MEncoderVideo extends Player {
 						// autodetect charset (blank mencoder_subcp config option)
 						subcp = SubtitleUtils.getSubCpOptionForMencoder(params.sid);
 					}
+
 					if (isNotBlank(subcp)) {
 						sb.append("-subcp ").append(subcp).append(" ");
 						if (configuration.isMencoderSubFribidi()) {
@@ -1806,18 +1765,41 @@ public class MEncoderVideo extends Player {
 		}
 
 		/*
-		 * TODO: Move the following block up with the rest of the
-		 * subtitle stuff
+		 * handle subtitles
+		 *
+		 * try to reconcile the fact that the handling of "Definitely disable subtitles" is spread out
+		 * over net.pms.encoders.Player.setAudioAndSubs and here by setting both of MEncoder's "disable
+		 * subs" options if any of the internal conditions for disabling subtitles are met.
 		 */
-		if (isBlank(externalSubtitlesFileName) && params.sid != null) {
-			cmdList.add("-sid");
-			cmdList.add("" + params.sid.getId());
-		} else if (isNotBlank(externalSubtitlesFileName) && !avisynth()) { // Trick necessary for MEncoder to skip the internal embedded track ?
-			cmdList.add("-sid");
-			cmdList.add("100");
-		} else if (isBlank(externalSubtitlesFileName)) { // Trick necessary for MEncoder to not display the internal embedded track
-			cmdList.add("-subdelay");
-			cmdList.add("20000");
+		if (isDisableSubtitles(params)) {
+			// MKV: in some circumstances, MEncoder automatically selects an internal sub unless we explicitly disable (internal) subtitles
+			// http://www.ps3mediaserver.org/forum/viewtopic.php?f=14&t=15891
+			cmdList.add("-nosub");
+			// make sure external subs are not automatically loaded
+			cmdList.add("-noautosub");
+		} else {
+			// note: isEmbedded() and isExternal() are mutually exclusive
+			if (params.sid.isEmbedded()) { // internal (embedded) subs
+				cmdList.add("-sid");
+				cmdList.add("" + params.sid.getId());
+			} else { // external subtitles
+				assert params.sid.isExternal(); // confirm the mutual exclusion
+
+				if (params.sid.getType() == SubtitleType.VOBSUB) {
+					cmdList.add("-vobsub");
+					cmdList.add(externalSubtitlesFileName.substring(0, externalSubtitlesFileName.length() - 4));
+					cmdList.add("-slang");
+					cmdList.add("" + params.sid.getLang());
+				} else {
+					cmdList.add("-sub");
+					cmdList.add(externalSubtitlesFileName.replace(",", "\\,")); // Commas in MEncoder separate multiple subtitle files
+
+					if (params.sid.isExternalFileUtf()) {
+						// append -utf8 option for UTF-8 external subtitles
+						cmdList.add("-utf8");
+					}
+				}
+			}
 		}
 
 		// -ofps
@@ -1839,28 +1821,6 @@ public class MEncoderVideo extends Player {
 
 		cmdList.add("-ofps");
 		cmdList.add(ofps);
-
-		/*
-		 * TODO: Move the following block up with the rest of the
-		 * subtitle stuff
-		 */
-		// external subtitles file
-		if (!configuration.isMencoderDisableSubs() && !avisynth() && params.sid != null && params.sid.isExternal()) {
-			if (params.sid.getType() == SubtitleType.VOBSUB) {
-				cmdList.add("-vobsub");
-				cmdList.add(externalSubtitlesFileName.substring(0, externalSubtitlesFileName.length() - 4));
-				cmdList.add("-slang");
-				cmdList.add("" + params.sid.getLang());
-			} else {
-				cmdList.add("-sub");
-				cmdList.add(externalSubtitlesFileName.replace(",", "\\,")); // Commas in MEncoder separate multiple subtitle files
-
-				if (params.sid.isExternalFileUtf()) {
-					// append -utf8 option for UTF-8 external subtitles
-					cmdList.add("-utf8");
-				}
-			}
-		}
 
 		if (fileName.toLowerCase().endsWith(".evo")) {
 			cmdList.add("-psprobe");
@@ -1902,7 +1862,7 @@ public class MEncoderVideo extends Player {
 
 			/*
 			 * Implement overscan compensation settings
-			 * 
+			 *
 			 * This feature takes into account aspect ratio,
 			 * making it less blunt than the Video Scaler option
 			 */
@@ -1972,7 +1932,7 @@ public class MEncoderVideo extends Player {
 				media.getWidth() > 0 &&
 				media.getHeight() > 0 &&
 				(
-					media.getWidth()  > params.mediaRenderer.getMaxVideoWidth() || 
+					media.getWidth()  > params.mediaRenderer.getMaxVideoWidth() ||
 					media.getHeight() > params.mediaRenderer.getMaxVideoHeight()
 				)
 			) {
@@ -1982,7 +1942,7 @@ public class MEncoderVideo extends Player {
 				/*
 				 * First we deal with some exceptions, then if they are not matched we will
 				 * let the renderer limits work.
-				 * 
+				 *
 				 * This is so, for example, we can still define a maximum resolution of
 				 * 1920x1080 in the renderer config file but still support 1920x1088 when
 				 * it's needed, otherwise we would either resize 1088 to 1080, meaning the
@@ -2043,7 +2003,7 @@ public class MEncoderVideo extends Player {
 		 * case we scale it down to the nearest 4.
 		 * This fixes the long-time bug of videos displaying in black and
 		 * white with diagonal strips of colour, weird one.
-		 * 
+		 *
 		 * TODO: Integrate this with the other stuff so that "scale" only
 		 * ever appears once in the MEncoder CMD.
 		 */
@@ -2055,7 +2015,7 @@ public class MEncoderVideo extends Player {
 			newHeight = (media.getHeight() / 4) * 4;
 
 			cmdList.add("-vf");
-			cmdList.add("softskip,scale=" + newWidth + ":" + newHeight);
+			cmdList.add("softskip,expand=" + newWidth + ":" + newHeight);
 		}
 
 		if (configuration.getMencoderMT() && !avisynth && !dvd && !(media.getCodecV() != null && (media.getCodecV().equals("mpeg2video")))) {
@@ -2317,7 +2277,7 @@ public class MEncoderVideo extends Player {
 				audioPipe.deleteLater();
 			} else {
 				// remove the -oac switch, otherwise the "too many video packets" errors appear again
-				for (ListIterator<String> it = cmdList.listIterator(); it.hasNext();) { 
+				for (ListIterator<String> it = cmdList.listIterator(); it.hasNext();) {
 					String option = it.next();
 
 					if (option.equals("-oac")) {
@@ -2389,7 +2349,7 @@ public class MEncoderVideo extends Player {
 				// it seems the -really-quiet prevents mencoder to stop the pipe output after some time...
 				// -mc 0.1 make the DTS-HD extraction works better with latest mencoder builds, and makes no impact on the regular DTS one
 				String ffmpegLPCMextract[] = new String[]{
-					executable(), 
+					executable(),
 					"-ss", "0",
 					fileName,
 					"-really-quiet",
@@ -2518,10 +2478,10 @@ public class MEncoderVideo extends Player {
 				cmdList.add(pipe.getInputPipe());
 			}
 
-			String[] cmdArray = new String[cmdList.size()];
+			String[] cmdArray = new String[ cmdList.size() ];
 			cmdList.toArray(cmdArray);
+
 			cmdArray = finalizeTranscoderArgs(
-				this,
 				fileName,
 				dlna,
 				media,
@@ -2535,10 +2495,11 @@ public class MEncoderVideo extends Player {
 				ProcessWrapper mkfifo_process = pipe.getPipeProcess();
 				pw.attachProcess(mkfifo_process);
 				mkfifo_process.runInNewThread();
+
 				try {
 					Thread.sleep(50);
-				} catch (InterruptedException e) {
-				}
+				} catch (InterruptedException e) { }
+
 				pipe.deleteLater();
 			}
 		}
@@ -2547,8 +2508,7 @@ public class MEncoderVideo extends Player {
 
 		try {
 			Thread.sleep(100);
-		} catch (InterruptedException e) {
-		}
+		} catch (InterruptedException e) { }
 
 		return pw;
 	}

@@ -144,11 +144,11 @@ public class DLNAMediaDatabase implements Runnable {
 				if (!FileUtils.exists(dbDir)){
 					LOGGER.debug("The cache has been deleted because it was corrupt or had the wrong version");
 				} else {
-					if(!java.awt.GraphicsEnvironment.isHeadless()) {
+					if (!java.awt.GraphicsEnvironment.isHeadless()) {
 						JOptionPane.showMessageDialog(
 							(JFrame) (SwingUtilities.getWindowAncestor((Component) PMS.get().getFrame())),
 							String.format(Messages.getString("DLNAMediaDatabase.5"), dbDir),
-		                    "PS3 Media Server error",
+							Messages.getString("Dialog.Error"),
 		                    JOptionPane.ERROR_MESSAGE);
 					}	
 					LOGGER.debug("Damaged cache can't be deleted. Stop the program and delete the folder \"" + dbDir + "\" manually");
@@ -737,11 +737,6 @@ public class DLNAMediaDatabase implements Runnable {
 	}
 
 	public void shutdown() {
-		try {
-			cp.dispose();
-			
-		} catch (SQLException e) {
-			PMS.error("Database closing failed", e);
-		}
+		cp.dispose();
 	}
 }

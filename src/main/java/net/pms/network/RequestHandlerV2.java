@@ -227,7 +227,7 @@ public class RequestHandlerV2 extends SimpleChannelUpstreamHandler {
 				renderer = RendererConfiguration.getDefaultConf();
 				renderer.associateIP(ia);
 				request.setMediaRenderer(renderer);
-				LOGGER.trace("Using default media renderer " + request.getMediaRenderer().getRendererName());
+				LOGGER.trace("Using default media renderer: " + request.getMediaRenderer().getRendererName());
 
 				if (userAgentString != null && !userAgentString.equals("FDSSDP")) {
 					// We have found an unknown renderer
@@ -239,7 +239,8 @@ public class RequestHandlerV2 extends SimpleChannelUpstreamHandler {
 				if (userAgentString != null) {
 					LOGGER.trace("HTTP User-Agent: " + userAgentString);
 				}
-				LOGGER.trace("Recognized media renderer " + request.getMediaRenderer().getRendererName());
+
+				LOGGER.trace("Recognized media renderer: " + request.getMediaRenderer().getRendererName());
 			}
 		}
 
